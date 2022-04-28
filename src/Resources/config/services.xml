@@ -9,8 +9,12 @@
             <tag name="payum.gateway_factory_builder" factory="sylius_payment" />
         </service>
         <service id="Acme\SyliusExamplePlugin\Form\Type\SyliusGatewayConfigurationType">
-            <tag name="sylius.gateway_configuration_type" type="sylius_payment" label="Sylius Payment" />
+            <tag name="sylius.gateway_configuration_type" type="wintopay_payment" label="Wintopay Payment" />
             <tag name="form.type" />
+        </service>
+        <service id="Acme\SyliusExamplePlugin\Payum\Action\CaptureAction" public="true">
+            <argument type="service" id="sylius.http_client" />
+            <tag name="payum.action" factory="wintopay_payment" alias="payum.action.capture" />
         </service>
     </services>
 </container>

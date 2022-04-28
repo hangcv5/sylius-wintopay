@@ -12,6 +12,8 @@ final class SyliusGatewayConfigurationType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
-        $builder->add('api_key', TextType::class);
+        $builder->add('merchant_id', TextType::class);
+        $builder->add('md5key', TextType::class);
+        $builder->add('gateway_url', TextType::class);
     }
 }

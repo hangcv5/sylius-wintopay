@@ -7,15 +7,26 @@ namespace Acme\SyliusExamplePlugin\Payum;
 final class SyliusApi
 {
     /** @var string */
-    private $apiKey;
+    private $merchant_id;
+    private $md5key;
 
-    public function __construct(string $apiKey)
+    public function __construct(string $merchant_id,string $md5key,$gateway_url)
     {
-        $this->apiKey = $apiKey;
+        $this->merchant_id = $merchant_id;
+        $this->md5key = $md5key;
+        $this->gateway_url = $gateway_url;
     }
 
-    public function getApiKey(): string
+    public function getMerchantId(): string
     {
-        return $this->apiKey;
+        return $this->merchant_id;
+    }
+    public function getMd5Key(): string
+    {
+        return $this->md5key;
+    }
+    public function getGatewayUrl(): string
+    {
+        return $this->gateway_url;
     }
 }
