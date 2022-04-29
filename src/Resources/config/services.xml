@@ -4,17 +4,17 @@
     <services>
         <service id="Acme\SyliusExamplePlugin\Controller\GreetingController" autowire="true" autoconfigure="true" public="true" />
         <!-- Put your services here -->
-        <service id="app.wintopay_payment" class="Payum\Core\Bridge\Symfony\Builder\GatewayFactoryBuilder">
+        <service id="app.sylius_payment" class="Payum\Core\Bridge\Symfony\Builder\GatewayFactoryBuilder">
             <argument>Acme\SyliusExamplePlugin\Payum\SyliusPaymentGatewayFactory</argument>
             <tag name="payum.gateway_factory_builder" factory="sylius_payment" />
         </service>
         <service id="Acme\SyliusExamplePlugin\Form\Type\SyliusGatewayConfigurationType">
-            <tag name="sylius.gateway_configuration_type" type="wintopay_payment" label="Wintopay Payment" />
+            <tag name="sylius.gateway_configuration_type" type="sylius_payment" label="Sylius Payment" />
             <tag name="form.type" />
         </service>
         <service id="Acme\SyliusExamplePlugin\Payum\Action\CaptureAction" public="true">
             <argument type="service" id="sylius.http_client" />
-            <tag name="payum.action" factory="wintopay_payment" alias="payum.action.capture" />
+            <tag name="payum.action" factory="sylius_payment" alias="payum.action.capture" />
         </service>
     </services>
 </container>
