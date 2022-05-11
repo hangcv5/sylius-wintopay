@@ -28,20 +28,16 @@ final class CaptureAction implements ActionInterface, ApiAwareInterface
 
     public function execute($request): void
     {
-        $this->record_logs('request data',$request);
         RequestNotSupportedException::assertSupports($this, $request);
         /** @var SyliusPaymentInterface $payment */
         $payment = $request->getModel();
         $details = $payment->getDetails();
-        $order = $request->getFirstModel()->getOrder();
+        //$order = $request->getFirstModel()->getOrder();
         $this->record_logs('payment',$payment);
         $this->record_logs('payment details',$details);
         $this->record_logs('request->getFirstModel()->getOrder()',$order);
         $this->record_logs('syliusApi',$this->api);
-        var_dump($payment);echo '<br>';
-        var_dump($details);echo '<br>';
-        var_dump($order);echo '<br>';
-        var_dump($this->api);echo '<br>';
+        var_dump($payment);exit;
         try {
             $response = $this->client->request('POST', '', [
                 'body' => json_encode([
