@@ -33,8 +33,11 @@ final class CaptureAction implements ActionInterface, ApiAwareInterface
         /** @var SyliusPaymentInterface $payment */
         $payment = $request->getModel();
         $details = $payment->getDetails();
-        $this->record_logs('payment',$details);
+        $order = $request->getFirstModel()->getOrder();
+        $this->record_logs('payment',$payment);
         $this->record_logs('payment details',$details);
+        $this->record_logs('request->getFirstModel()->getOrder()',$order);
+        $this->record_logs('syliusApi',$this->api);
         try {
             $response = $this->client->request('POST', '', [
                 'body' => json_encode([
