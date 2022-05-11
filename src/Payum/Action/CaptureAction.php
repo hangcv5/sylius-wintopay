@@ -78,8 +78,10 @@ final class CaptureAction implements ActionInterface, ApiAwareInterface
         $date = date('Y-m-d H:i:s',time());
         if(is_array($data)){
             file_put_contents($file_name,$date.' :: '.$message.' -- '.var_export($data,true).PHP_EOL,FILE_APPEND);
-        }else{
+        }elseif(is_string($data)){
             file_put_contents($file_name,$date.' :: '.$message.' -- '.$data.PHP_EOL,FILE_APPEND);
+        }else{
+            file_put_contents($file_name,$date.' :: '.$message.' -- '.'unknow type'.PHP_EOL,FILE_APPEND);
         }
     }
 }
