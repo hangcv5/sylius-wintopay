@@ -35,7 +35,7 @@ final class CaptureAction implements ActionInterface, ApiAwareInterface
         //$order = $request->getFirstModel()->getOrder();
         $this->record_logs('payment',$payment);
         $this->record_logs('payment details',$details);
-        $this->record_logs('request->getFirstModel()->getOrder()',$order);
+        //$this->record_logs('request->getFirstModel()->getOrder()',$order);
         $this->record_logs('syliusApi',$this->api);
         var_dump($payment);exit;
         try {
