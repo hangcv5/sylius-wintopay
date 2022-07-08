@@ -9,6 +9,8 @@ final class SyliusApi
     /** @var string */
     private $merchant_id;
     private $md5key;
+    private $gateway_url;
+    private $return_url;
 
     public function __construct(string $merchant_id,string $md5key,$gateway_url,string $return_url)
     {

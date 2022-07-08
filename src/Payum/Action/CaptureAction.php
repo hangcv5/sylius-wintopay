@@ -65,9 +65,9 @@ final class CaptureAction implements ActionInterface, ApiAwareInterface
         if(empty($billing_postal_code) && empty($shipping_postal_code)){
             $billing_postal_code = $shipping_postal_code = '000000';
         }
-        /*if(empty($billing_state) && empty($shipping_state)){
+        if(empty($billing_state) && empty($shipping_state)){
             $billing_state = $shipping_state = $billing_city;
-        }*/
+        }
         $website = $_SERVER['HTTP_HOST'];
         $return_url = $this->api->getReturnUrl();
         $data = [
@@ -95,7 +95,7 @@ final class CaptureAction implements ActionInterface, ApiAwareInterface
             'order_amount'=>($payment->getAmount()/100),
             'currency'=>$currency,
             'order_id'=>$order->getNumber(),
-            'freight'=>$order->getShippingTotal(),
+            'freight'=>$order->getShippingTotal()/100,
             'ip'=> $this->getIP(),
             'language'          => 'en',
             'hash'=>md5($this->api->getMerchantId().$order->getNumber().($payment->getAmount()/100).$currency.$this->api->getMd5Key().$website),

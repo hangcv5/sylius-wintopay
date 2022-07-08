@@ -38,8 +38,9 @@ class CallbackController extends NotifyController
                 $amount   = isset($get_data['amount'])?$get_data['amount']:'';
                 $currency = empty($get_data['currency'])?'':$get_data['currency'];
                 $metadata   = isset($get_data['metadata'])?$get_data['metadata']:'';
-                $encrypt = $this->hashEncrypt($string);
                 if($pay_type && $order_id){
+                    $db = new MysqlHelper();
+                    $order = $db->query('select * from sylius_payment where id='.$order_id);
                     if($result_code == '0000'){
                         //payment success ,redirect to payment success page
                         //update order status to success
@@ -50,7 +51,7 @@ class CallbackController extends NotifyController
                         $result = $db->exec('update sylius_payment set state="failed" where id='.$order_id);
                         $result1 = $db->exec('update sylius_order set payment_state="failed" where id='.$order_id);
                     }
-                    header("Location:".$redirect_url);
+                    header("Location:https://".$_SERVER['HTTP_HOST'].'/en_US/order/thank-you');
                     exit;
                 }else{
                     exit('[sign_verify-error]');
@@ -93,7 +94,7 @@ class CallbackController extends NotifyController
                         $result1 = $db->exec('update sylius_order set payment_state="cancelled" where id='.$order_id);
                     }
                 }
-                if($result){
+                if($result && $result1){
                     exit('[success]');
                 }else{
                     exit('[update_failed]');
@@ -139,7 +140,7 @@ class MysqlHelper{
         if($result['host'] && $result['dbName'] && $result['userName'] && $result['pass']) {
             $this->dbh = new \mysqli($result['host'],$result['userName'],$result['pass'],$result['dbName']);
         }else{
-            echo '数据库配置错误';exit;
+            echo 'ERROR! CONNECT DATABASE ERROR!';exit;
         }
     }
     //查询方法
