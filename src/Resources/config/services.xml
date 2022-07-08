@@ -2,14 +2,16 @@
 
 <container xmlns="http://symfony.com/schema/dic/services" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
     <services>
-        <service id="Acme\SyliusExamplePlugin\Controller\GreetingController" autowire="true" autoconfigure="true" public="true" />
+        <service id="Acme\SyliusExamplePlugin\Controller\CallbackController" class="Acme\SyliusExamplePlugin\Controller\CallbackController" autowire="true" autoconfigure="true" public="true">
+            <argument></argument>
+        </service>
         <!-- Put your services here -->
         <service id="app.sylius_payment" class="Payum\Core\Bridge\Symfony\Builder\GatewayFactoryBuilder">
             <argument>Acme\SyliusExamplePlugin\Payum\SyliusPaymentGatewayFactory</argument>
             <tag name="payum.gateway_factory_builder" factory="sylius_payment" />
         </service>
         <service id="Acme\SyliusExamplePlugin\Form\Type\SyliusGatewayConfigurationType">
-            <tag name="sylius.gateway_configuration_type" type="sylius_payment" label="Sylius Payment" />
+            <tag name="sylius.gateway_configuration_type" type="sylius_payment" label="Wintopay Payment" />
             <tag name="form.type" />
         </service>
         <service id="Acme\SyliusExamplePlugin\Payum\Action\CaptureAction" public="true">

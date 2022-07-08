@@ -10,11 +10,12 @@ final class SyliusApi
     private $merchant_id;
     private $md5key;
 
-    public function __construct(string $merchant_id,string $md5key,$gateway_url)
+    public function __construct(string $merchant_id,string $md5key,$gateway_url,string $return_url)
     {
         $this->merchant_id = $merchant_id;
         $this->md5key = $md5key;
         $this->gateway_url = $gateway_url;
+        $this->return_url = $return_url;
     }
 
     public function getMerchantId(): string
@@ -28,5 +29,9 @@ final class SyliusApi
     public function getGatewayUrl(): string
     {
         return $this->gateway_url;
+    }
+    public function getReturnUrl(): string
+    {
+        return $this->return_url;
     }
 }

@@ -15,5 +15,6 @@ final class SyliusGatewayConfigurationType extends AbstractType
         $builder->add('merchant_id', TextType::class);
         $builder->add('md5key', TextType::class);
         $builder->add('gateway_url', TextType::class);
+        $builder->add('return_url', TextType::class);
     }
 }
