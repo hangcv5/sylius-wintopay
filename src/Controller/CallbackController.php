@@ -157,12 +157,10 @@ class CallbackController extends NotifyController implements ActionInterface, Ap
     }
     public function setApi($api): void
     {
-        echo 'setapi in';
         if (!$api instanceof SyliusApi) {
             echo 'throw exception';
             throw new UnsupportedApiException('Not supported. Expected an instance of ' . SyliusApi::class);
         }
-        echo 'set api';
         $this->api = $api;
     }
 }
