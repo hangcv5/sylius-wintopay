@@ -29,6 +29,8 @@ class CallbackController extends NotifyController implements ActionInterface, Ap
     private $entityManager;
     private $localeContext;
     private $paymentMethodRepository;
+    /** @var SyliusApi */
+    private $api;
 
     public function __construct(OrderRepositoryInterface $orderRepository, PaymentRepositoryInterface $paymentRepository,  EntityManagerInterface $entityManager, LocaleContextInterface $localeContext,PaymentMethodRepositoryInterface $paymentMethodRepository){
         $this->orderRepository = $orderRepository;

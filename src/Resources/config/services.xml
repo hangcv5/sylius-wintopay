@@ -8,6 +8,8 @@
             <argument type="service" id="doctrine.orm.entity_manager" />
             <argument type="service" id="sylius.context.locale" />
             <argument type="service" id="sylius.repository.payment_method" />
+            <argument>Acme\SyliusExamplePlugin\Payum\SyliusPaymentGatewayFactory</argument>
+            <tag name="payum.gateway_factory_builder" factory="sylius_payment" />
         </service>
         <!-- Put your services here -->
         <service id="app.sylius_payment" class="Payum\Core\Bridge\Symfony\Builder\GatewayFactoryBuilder">
