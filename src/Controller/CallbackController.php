@@ -27,12 +27,14 @@ class CallbackController extends NotifyController implements ActionInterface, Ap
     private $paymentRepository;
     private $entityManager;
     private $localeContext;
+    private $api;
 
-    public function __construct(OrderRepositoryInterface $orderRepository, PaymentRepositoryInterface $paymentRepository,  EntityManagerInterface $entityManager, LocaleContextInterface $localeContext){
+    public function __construct(SyliusApi $api,OrderRepositoryInterface $orderRepository, PaymentRepositoryInterface $paymentRepository,  EntityManagerInterface $entityManager, LocaleContextInterface $localeContext){
         $this->orderRepository = $orderRepository;
         $this->paymentRepository = $paymentRepository;
         $this->entityManager = $entityManager;
         $this->localeContext = $localeContext;
+        $this->api = $api;
     }
     public function callback()
     {
@@ -50,18 +52,21 @@ class CallbackController extends NotifyController implements ActionInterface, Ap
                 $amount   = isset($get_data['amount'])?$get_data['amount']:'';
                 $currency = empty($get_data['currency'])?'':$get_data['currency'];
                 $metadata   = isset($get_data['metadata'])?$get_data['metadata']:'';
+
                 if($pay_type && $order_id){
-                    $db = new MysqlHelper();
-                    $order = $db->query('select * from sylius_payment where id='.$order_id);
                     if($result_code == '0000'){
-                        //payment success ,redirect to payment success page
-                        //update order status to success
-                        $result = $db->exec('update sylius_payment set state="completed" where id='.$order_id);
-                        $result1 = $db->exec('update sylius_order set payment_state="paid" where id='.$order_id);
+                        $order = $this->orderRepository->find($order_id);
+                        $order->setPaymentState('paid');
+                        $payment = $order->getLastPayment();
+                        $payment->setState(SyliusPaymentInterface::STATE_COMPLETED);
+                        $this->entityManager->persist($order);
+                        $this->entityManager->flush();
                     }else{
-                        //payment failed ,redirect to payment failed page
-                        $result = $db->exec('update sylius_payment set state="failed" where id='.$order_id);
-                        $result1 = $db->exec('update sylius_order set payment_state="failed" where id='.$order_id);
+                        $order = $this->orderRepository->find($order_id);
+                        $payment = $order->getLastPayment();
+                        $payment->setState(SyliusPaymentInterface::STATE_FAILED);
+                        $this->entityManager->persist($order);
+                        $this->entityManager->flush();
                     }
                     header("Location:https://".$_SERVER['HTTP_HOST'].'/en_US/order/thank-you');
                     exit;
@@ -86,24 +91,28 @@ class CallbackController extends NotifyController implements ActionInterface, Ap
             $sign_verify= empty($data['sign_verify'])?'':$data['sign_verify']; //加密
             //$str = $id.$status.$amount_value.$this->api->getMd5Key().$this->api->getMerchantId().$request_id;
             if($order_id && $status){
-                $this->record_logs('encrypt pass');
-                $db = new MysqlHelper();
-                $order = $db->query('select * from sylius_payment where id='.$order_id);
                 if($order){
                     $this->record_logs('order data',$order);
                     //authorized, cancelled, cart, completed, failed, new, processing, refunded
                     if($status == 'paid'){
-                        //update order status to success
-                        $result = $db->exec('update sylius_payment set state="completed" where id='.$order_id);
-                        $result1 = $db->exec('update sylius_order set payment_state="paid" where id='.$order_id);
+                        $order = $this->orderRepository->find($order_id);
+                        $order->setPaymentState('paid');
+                        $payment = $order->getLastPayment();
+                        $payment->setState(SyliusPaymentInterface::STATE_COMPLETED);
+                        $this->entityManager->persist($order);
+                        $this->entityManager->flush();
                     }elseif($status == 'failed'){
-                        //update order status to failed
-                        $result = $db->exec('update sylius_payment set state="failed" where id='.$order_id);
-                        $result1 = $db->exec('update sylius_order set payment_state="failed" where id='.$order_id);
+                        $order = $this->orderRepository->find($order_id);
+                        $payment = $order->getLastPayment();
+                        $payment->setState(SyliusPaymentInterface::STATE_FAILED);
+                        $this->entityManager->persist($order);
+                        $this->entityManager->flush();
                     }elseif($status == 'cancelled'){
-                        //update order status to failed
-                        $result = $db->exec('update sylius_payment set state="cancelled" where id='.$order_id);
-                        $result1 = $db->exec('update sylius_order set payment_state="cancelled" where id='.$order_id);
+                        $order = $this->orderRepository->find($order_id);
+                        $payment = $order->getLastPayment();
+                        $payment->setState(SyliusPaymentInterface::STATE_CANCELLED);
+                        $this->entityManager->persist($order);
+                        $this->entityManager->flush();
                     }
                 }
                 if($result && $result1){
@@ -154,49 +163,4 @@ class CallbackController extends NotifyController implements ActionInterface, Ap
         $this->api = $api;
     }
 }
-class MysqlHelper{
-    private static $instance;
-    private $dbh;
-    //私有化构造函数
-    public function __construct(){
-        $env = new \_PHPStan_ccec86fc8\OndraM\CiDetector\Env();
-        $data = $env->get('DATABASE_URL');
-        $result = $this->getDatabaseSetting($data);
-        if($result['host'] && $result['dbName'] && $result['userName'] && $result['pass']) {
-            $this->dbh = new \mysqli($result['host'],$result['userName'],$result['pass'],$result['dbName']);
-        }else{
-            echo 'ERROR! CONNECT DATABASE ERROR!';exit;
-        }
-    }
-    //查询方法
-    public function query($sql)
-    {
-        return $this->dbh->query($sql)->fetch_all(MYSQLI_ASSOC);
-    }
-    //删除，更新，添加方法
-    public function exec($sql)
-    {
-        return $this->dbh->query($sql);
-    }
-    public function getDatabaseSetting($data)
-    {
-        $temp = explode('//',$data);
-        $temp1 = explode(':',$temp[1]);
-        $userName = $temp1[0];
-        $temp2 = explode('@',$temp1[1]);
-        $pass = $temp2[0];
-        $temp3 = explode('/',$temp2[1]);
-        $database = $temp3[1];
-        $temp4 = explode('/',$temp2[1]);
-        $host = $temp4[0];
-        return [
-            'host'=>$host,
-            'dbms'=>$temp[0],
-            'userName'=>$userName,
-            'pass'=>$pass,
-            'dbName'=>$database
-        ];
-    }
-}
-
 
