@@ -19,7 +19,7 @@ final class SyliusPaymentGatewayFactory extends GatewayFactory
         ]);
 
         $config['payum.api'] = function (ArrayObject $config) {
-            return new SyliusApi($config['merchant_id'],$config['md5key'],$config['gateway_url'],$config['return_url']);
+            return new SyliusApi($config['merchant_id'],$config['md5key'],$config['gateway_url']);
         };
     }
 }

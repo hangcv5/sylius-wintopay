@@ -69,7 +69,11 @@ final class CaptureAction implements ActionInterface, ApiAwareInterface
             $billing_state = $shipping_state = $billing_city;
         }
         $website = $_SERVER['HTTP_HOST'];
-        $return_url = $this->api->getReturnUrl();
+        if($this->is_https()){
+            $return_url = 'https://'.$website.'/'.$order->getLocaleCode().'/order/thank-you';
+        }else{
+            $return_url = 'http://'.$website.'/'.$order->getLocaleCode().'/order/thank-you';
+        }
         $data = [
             'billing_first_name' => $billing_first_name,
             'billing_last_name'  => $billing_last_name,
@@ -123,13 +127,29 @@ final class CaptureAction implements ActionInterface, ApiAwareInterface
                 exit;
             }else{
                 $this->record_logs('something wrong');
+                header("Location:".$return_url);
+                exit;
             }
         } catch (RequestException $exception) {
             $response = $exception->getResponse();
         } finally {
-            header("Location:".$redirect_url);
+            header("Location:".$return_url);
             exit;
         }
+    }
+    /**
+     * PHP判断当前协议是否为HTTPS
+     */
+    function is_https()
+    {
+        if (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off') {
+            return true;
+        } elseif (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+            return true;
+        } elseif (!empty($_SERVER['HTTP_FRONT_END_HTTPS']) && strtolower($_SERVER['HTTP_FRONT_END_HTTPS']) !== 'off') {
+            return true;
+        }
+        return false;
     }
 //curl封装
     public function wccpaycurlPost($url, $data,$website,$merchant_id)

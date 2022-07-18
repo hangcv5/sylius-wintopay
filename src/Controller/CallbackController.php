@@ -4,23 +4,35 @@ declare(strict_types=1);
 
 namespace  Acme\SyliusExamplePlugin\Controller;
 
+use Acme\SyliusExamplePlugin\Payum\SyliusApi;
+use Doctrine\ORM\EntityManagerInterface;
+use GuzzleHttp\Client;
 use Payum\Bundle\PayumBundle\Controller\NotifyController;
 use Payum\Core\Action\ActionInterface;
+use Payum\Core\ApiAwareInterface;
 use Payum\Core\Exception\RequestNotSupportedException;
-use Sylius\Bundle\CoreBundle\Doctrine\ORM\OrderRepository;
+use Payum\Core\Request\Capture;
+use Sylius\Component\Core\Model\PaymentInterface as SyliusPaymentInterface;
 use Sylius\Component\Core\Repository\OrderRepositoryInterface;
-use Sylius\Component\Order\Model\Order;
+use Sylius\Component\Core\Repository\PaymentRepositoryInterface;
+use Sylius\Component\Locale\Context\LocaleContextInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Sylius\Component\Core\Model\OrderInterface;
 
-class CallbackController extends NotifyController
+class CallbackController extends NotifyController implements ActionInterface, ApiAwareInterface
 {
-    private \Sylius\Component\Resource\Factory\FactoryInterface $orderFactory;
-    private OrderRepository $orderRepository;
+    private $orderFactory;
+    private $orderRepository;
+    private $paymentRepository;
+    private $entityManager;
+    private $localeContext;
 
-    public function __construct()
-    {
+    public function __construct(OrderRepositoryInterface $orderRepository, PaymentRepositoryInterface $paymentRepository,  EntityManagerInterface $entityManager, LocaleContextInterface $localeContext){
+        $this->orderRepository = $orderRepository;
+        $this->paymentRepository = $paymentRepository;
+        $this->entityManager = $entityManager;
+        $this->localeContext = $localeContext;
     }
     public function callback()
     {
@@ -120,12 +132,25 @@ class CallbackController extends NotifyController
         }
     }
 
+    public function supports($request): bool
+    {
+        return
+            $request instanceof Capture &&
+            $request->getModel() instanceof SyliusPaymentInterface;
+    }
+
+    public function execute($request)
+    {
+
+    }
     public function setApi($api): void
     {
+        echo 'setapi in';
         if (!$api instanceof SyliusApi) {
+            echo 'throw exception';
             throw new UnsupportedApiException('Not supported. Expected an instance of ' . SyliusApi::class);
         }
-
+        echo 'set api';
         $this->api = $api;
     }
 }
