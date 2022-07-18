@@ -19,6 +19,7 @@ use Sylius\Component\Locale\Context\LocaleContextInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Sylius\Component\Core\Model\OrderInterface;
+use Sylius\Component\Core\Repository\PaymentMethodRepositoryInterface;
 
 class CallbackController extends NotifyController implements ActionInterface, ApiAwareInterface
 {
@@ -27,14 +28,13 @@ class CallbackController extends NotifyController implements ActionInterface, Ap
     private $paymentRepository;
     private $entityManager;
     private $localeContext;
-    private $api;
+    private $paymentMethodRepository;
 
-    public function __construct(SyliusApi $api,OrderRepositoryInterface $orderRepository, PaymentRepositoryInterface $paymentRepository,  EntityManagerInterface $entityManager, LocaleContextInterface $localeContext){
+    public function __construct(OrderRepositoryInterface $orderRepository, PaymentRepositoryInterface $paymentRepository,  EntityManagerInterface $entityManager, LocaleContextInterface $localeContext,PaymentMethodRepositoryInterface $paymentMethodRepository){
         $this->orderRepository = $orderRepository;
         $this->paymentRepository = $paymentRepository;
         $this->entityManager = $entityManager;
         $this->localeContext = $localeContext;
-        $this->api = $api;
     }
     public function callback()
     {
@@ -56,6 +56,7 @@ class CallbackController extends NotifyController implements ActionInterface, Ap
                 if($pay_type && $order_id){
                     if($result_code == '0000'){
                         $order = $this->orderRepository->find($order_id);
+
                         $order->setPaymentState('paid');
                         $payment = $order->getLastPayment();
                         $payment->setState(SyliusPaymentInterface::STATE_COMPLETED);
