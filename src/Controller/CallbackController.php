@@ -28,11 +28,8 @@ class CallbackController extends NotifyController implements ActionInterface, Ap
     private $paymentRepository;
     private $entityManager;
     private $localeContext;
-    private $paymentMethodRepository;
-    /** @var SyliusApi */
-    private $api;
 
-    public function __construct(OrderRepositoryInterface $orderRepository, PaymentRepositoryInterface $paymentRepository,  EntityManagerInterface $entityManager, LocaleContextInterface $localeContext,PaymentMethodRepositoryInterface $paymentMethodRepository){
+    public function __construct(OrderRepositoryInterface $orderRepository, PaymentRepositoryInterface $paymentRepository,  EntityManagerInterface $entityManager, LocaleContextInterface $localeContext){
         $this->orderRepository = $orderRepository;
         $this->paymentRepository = $paymentRepository;
         $this->entityManager = $entityManager;
@@ -54,11 +51,9 @@ class CallbackController extends NotifyController implements ActionInterface, Ap
                 $amount   = isset($get_data['amount'])?$get_data['amount']:'';
                 $currency = empty($get_data['currency'])?'':$get_data['currency'];
                 $metadata   = isset($get_data['metadata'])?$get_data['metadata']:'';
-
                 if($pay_type && $order_id){
                     if($result_code == '0000'){
                         $order = $this->orderRepository->find($order_id);
-
                         $order->setPaymentState('paid');
                         $payment = $order->getLastPayment();
                         $payment->setState(SyliusPaymentInterface::STATE_COMPLETED);
@@ -94,11 +89,11 @@ class CallbackController extends NotifyController implements ActionInterface, Ap
             $sign_verify= empty($data['sign_verify'])?'':$data['sign_verify']; //加密
             //$str = $id.$status.$amount_value.$this->api->getMd5Key().$this->api->getMerchantId().$request_id;
             if($order_id && $status){
+                $order = $this->orderRepository->find($order_id);
                 if($order){
                     $this->record_logs('order data',$order);
                     //authorized, cancelled, cart, completed, failed, new, processing, refunded
                     if($status == 'paid'){
-                        $order = $this->orderRepository->find($order_id);
                         $order->setPaymentState('paid');
                         $payment = $order->getLastPayment();
                         $payment->setState(SyliusPaymentInterface::STATE_COMPLETED);
@@ -118,7 +113,7 @@ class CallbackController extends NotifyController implements ActionInterface, Ap
                         $this->entityManager->flush();
                     }
                 }
-                if($result && $result1){
+                if($result){
                     exit('[success]');
                 }else{
                     exit('[update_failed]');
@@ -158,7 +153,6 @@ class CallbackController extends NotifyController implements ActionInterface, Ap
     public function setApi($api): void
     {
         if (!$api instanceof SyliusApi) {
-            echo 'throw exception';
             throw new UnsupportedApiException('Not supported. Expected an instance of ' . SyliusApi::class);
         }
         $this->api = $api;

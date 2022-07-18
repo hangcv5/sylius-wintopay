@@ -74,6 +74,9 @@ final class CaptureAction implements ActionInterface, ApiAwareInterface
         }else{
             $return_url = 'http://'.$website.'/'.$order->getLocaleCode().'/order/thank-you';
         }
+        $metaData = [
+            'token'=>$order->getTokenValue()
+        ];
         $data = [
             'billing_first_name' => $billing_first_name,
             'billing_last_name'  => $billing_last_name,
@@ -103,7 +106,7 @@ final class CaptureAction implements ActionInterface, ApiAwareInterface
             'ip'=> $this->getIP(),
             'language'          => 'en',
             'hash'=>md5($this->api->getMerchantId().$order->getNumber().($payment->getAmount()/100).$currency.$this->api->getMd5Key().$website),
-            'metadata'=>'',
+            'metadata'=> json_encode($metaData),
             'session_id'=>'',
             'user_agent' => $_SERVER['HTTP_USER_AGENT'],
             'version'       =>'20201001',
@@ -112,9 +115,11 @@ final class CaptureAction implements ActionInterface, ApiAwareInterface
             'fail_url'=>$return_url,
             'pending_url'=>$return_url,
         ];
+        $this->record_logs('request data',$data);
         try {
             $response = $this->wccpaycurlPost($this->api->getGatewayUrl(),$data,$website,$this->api->getMerchantId());
             $response_data = json_decode($response,true);
+            $this->record_logs('response data',$response_data);
             $status_code = empty($response_data['status_code'])?'':$response_data['status_code'];
             $status = empty($response_data['status'])?'':$response_data['status'];
             $message = empty($response_data['message'])?'':$response_data['message'];
@@ -132,6 +137,8 @@ final class CaptureAction implements ActionInterface, ApiAwareInterface
             }
         } catch (RequestException $exception) {
             $response = $exception->getResponse();
+            header("Location:".$return_url);
+            exit;
         } finally {
             header("Location:".$return_url);
             exit;
@@ -151,7 +158,7 @@ final class CaptureAction implements ActionInterface, ApiAwareInterface
         }
         return false;
     }
-//curl封装
+    //curl封装
     public function wccpaycurlPost($url, $data,$website,$merchant_id)
     {
         $headers = array(
