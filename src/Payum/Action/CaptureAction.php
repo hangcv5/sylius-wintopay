@@ -62,21 +62,27 @@ final class CaptureAction implements ActionInterface, ApiAwareInterface
         $shipping_address     = empty($order->getShippingAddress()->getStreet())?$order->getBillingAddress()->getStreet():$order->getShippingAddress()->getStreet();
         $shipping_phone       = empty($order->getShippingAddress()->getPhoneNumber())?$order->getBillingAddress()->getPhoneNumber():$order->getShippingAddress()->getPhoneNumber();
         $currency = $payment->getCurrencyCode();
+        //没有邮编默认6个0
         if(empty($billing_postal_code) && empty($shipping_postal_code)){
             $billing_postal_code = $shipping_postal_code = '000000';
         }
+        //没有州默认默认同城市值
         if(empty($billing_state) && empty($shipping_state)){
             $billing_state = $shipping_state = $billing_city;
         }
         $website = $_SERVER['HTTP_HOST'];
+        //匹配不同语言，返回对应的thank you界面
         if($this->is_https()){
             $return_url = 'https://'.$website.'/'.$order->getLocaleCode().'/order/thank-you';
         }else{
             $return_url = 'http://'.$website.'/'.$order->getLocaleCode().'/order/thank-you';
         }
+        //order token
         $metaData = [
-            'token'=>$order->getTokenValue()
+            'token'=>md5($order->getTokenValue().$order->getNumber())
         ];
+        //系统金额全放大了100倍，除100为正确金额
+        $orderAmount = $payment->getAmount()/100;
         $data = [
             'billing_first_name' => $billing_first_name,
             'billing_last_name'  => $billing_last_name,
@@ -99,13 +105,13 @@ final class CaptureAction implements ActionInterface, ApiAwareInterface
 
             'email'=>(string) $customer->getEmail(),
             'merchant_id'=>$this->api->getMerchantId(),
-            'order_amount'=>($payment->getAmount()/100),
+            'order_amount'=>$orderAmount,
             'currency'=>$currency,
             'order_id'=>$order->getNumber(),
             'freight'=>$order->getShippingTotal()/100,
             'ip'=> $this->getIP(),
             'language'          => 'en',
-            'hash'=>md5($this->api->getMerchantId().$order->getNumber().($payment->getAmount()/100).$currency.$this->api->getMd5Key().$website),
+            'hash'=>md5($this->api->getMerchantId().$order->getNumber().$orderAmount.$currency.$this->api->getMd5Key().$website),
             'metadata'=> json_encode($metaData),
             'session_id'=>'',
             'user_agent' => $_SERVER['HTTP_USER_AGENT'],
@@ -115,31 +121,20 @@ final class CaptureAction implements ActionInterface, ApiAwareInterface
             'fail_url'=>$return_url,
             'pending_url'=>$return_url,
         ];
-        $this->record_logs('request data',$data);
-        try {
-            $response = $this->wccpaycurlPost($this->api->getGatewayUrl(),$data,$website,$this->api->getMerchantId());
-            $response_data = json_decode($response,true);
-            $this->record_logs('response data',$response_data);
-            $status_code = empty($response_data['status_code'])?'':$response_data['status_code'];
-            $status = empty($response_data['status'])?'':$response_data['status'];
-            $message = empty($response_data['message'])?'':$response_data['message'];
-            $fail_code = empty($response_data['fail_code'])?'':$response_data['fail_code'];
-            $cy_id = empty($response_data['cy_id'])?'':$response_data['cy_id'];
-            $expires = empty($response_data['expires'])?'':$response_data['expires'];
-            $redirect_url = empty($response_data['redirect_url'])?'':$response_data['redirect_url'];
-            if($status == 'authorization' && $redirect_url){
-                header("Location:".$redirect_url);
-                exit;
-            }else{
-                $this->record_logs('something wrong');
-                header("Location:".$return_url);
-                exit;
-            }
-        } catch (RequestException $exception) {
-            $response = $exception->getResponse();
-            header("Location:".$return_url);
+
+        $response = $this->wccpaycurlPost($this->api->getGatewayUrl(),$data,$website,$this->api->getMerchantId());
+        $response_data = json_decode($response,true);
+        $status_code = empty($response_data['status_code'])?'':$response_data['status_code'];
+        $status = empty($response_data['status'])?'':$response_data['status'];
+        $message = empty($response_data['message'])?'':$response_data['message'];
+        $fail_code = empty($response_data['fail_code'])?'':$response_data['fail_code'];
+        $cy_id = empty($response_data['cy_id'])?'':$response_data['cy_id'];
+        $expires = empty($response_data['expires'])?'':$response_data['expires'];
+        $redirect_url = empty($response_data['redirect_url'])?'':$response_data['redirect_url'];
+        if($status == 'authorization' && $redirect_url){
+            header("Location:".$redirect_url);
             exit;
-        } finally {
+        }else{
             header("Location:".$return_url);
             exit;
         }
@@ -217,22 +212,7 @@ final class CaptureAction implements ActionInterface, ApiAwareInterface
 
         return $itemsData;
     }
-    /**
-     * @param $data
-     * @param string $file_name
-     * 记录日志方法
-     */
-    public function record_logs($message = '',$data = '',$file_name='logs.txt')
-    {
-        $date = date('Y-m-d H:i:s',time());
-        if(is_array($data)){
-            file_put_contents($file_name,$date.' :: '.$message.' -- '.var_export($data,true).PHP_EOL,FILE_APPEND);
-        }elseif(is_string($data)){
-            file_put_contents($file_name,$date.' :: '.$message.' -- '.$data.PHP_EOL,FILE_APPEND);
-        }else{
-            file_put_contents($file_name,$date.' :: '.$message.' -- '.'unknow type'.PHP_EOL,FILE_APPEND);
-        }
-    }
+
     //获取用户ip
     function getIP(){
         if(isset($_SERVER['HTTP_X_FORWARDED_FOR'])){

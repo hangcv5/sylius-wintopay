@@ -52,30 +52,12 @@ class CallbackController extends NotifyController implements ActionInterface, Ap
                 $currency = empty($get_data['currency'])?'':$get_data['currency'];
                 $metadata   = isset($get_data['metadata'])?$get_data['metadata']:'';
                 if($pay_type && $order_id){
-                    if($result_code == '0000'){
-                        $order = $this->orderRepository->find($order_id);
-                        $order->setPaymentState('paid');
-                        $payment = $order->getLastPayment();
-                        $payment->setState(SyliusPaymentInterface::STATE_COMPLETED);
-                        $this->entityManager->persist($order);
-                        $this->entityManager->flush();
-                    }else{
-                        $order = $this->orderRepository->find($order_id);
-                        $payment = $order->getLastPayment();
-                        $payment->setState(SyliusPaymentInterface::STATE_FAILED);
-                        $this->entityManager->persist($order);
-                        $this->entityManager->flush();
-                    }
                     header("Location:https://".$_SERVER['HTTP_HOST'].'/en_US/order/thank-you');
                     exit;
-                }else{
-                    exit('[sign_verify-error]');
                 }
             }
-        }elseif($_SERVER['REQUEST_METHOD']==='POST'){
-            $this->record_logs('callback post request');
+        }elseif($_SERVER['REQUEST_METHOD']==='POST'){ //异步回调
             $result = file_get_contents('php://input',true);
-            $this->record_logs('callback post data',$result);
             $data = json_decode($result,true);
             $id         = empty($data['id'])?'':$data['id']; 			//流水号
             $order_id   = empty($data['order_id'])?'':$data['order_id'];//订单号
@@ -87,27 +69,27 @@ class CallbackController extends NotifyController implements ActionInterface, Ap
             $fail_message= empty($data['fail_message'])?'':$data['fail_message'];
             $request_id = empty($data['request_id'])?'':$data['request_id'];
             $sign_verify= empty($data['sign_verify'])?'':$data['sign_verify']; //加密
-            //$str = $id.$status.$amount_value.$this->api->getMd5Key().$this->api->getMerchantId().$request_id;
+            $token = json_decode($metadata,true);
+            $token_value = $token['token'];
             if($order_id && $status){
-                $order = $this->orderRepository->find($order_id);
-                if($order){
-                    $this->record_logs('order data',$order);
-                    //authorized, cancelled, cart, completed, failed, new, processing, refunded
+                $order = $this->orderRepository->findOneByNumber($order_id);
+                $payment = $order->getLastPayment();
+                $order_token = md5($order->getTokenValue().$order_id);
+                //验证请求
+                if($order && ($token_value == $order_token)){
                     if($status == 'paid'){
-                        $order->setPaymentState('paid');
-                        $payment = $order->getLastPayment();
-                        $payment->setState(SyliusPaymentInterface::STATE_COMPLETED);
-                        $this->entityManager->persist($order);
-                        $this->entityManager->flush();
+                        //已是成功状态不再更新
+                        if($payment->getState() != SyliusPaymentInterface::STATE_COMPLETED){
+                            $order->setPaymentState('paid');
+                            $payment->setState(SyliusPaymentInterface::STATE_COMPLETED);
+                            $this->entityManager->persist($order);
+                            $this->entityManager->flush();
+                        }
                     }elseif($status == 'failed'){
-                        $order = $this->orderRepository->find($order_id);
-                        $payment = $order->getLastPayment();
                         $payment->setState(SyliusPaymentInterface::STATE_FAILED);
                         $this->entityManager->persist($order);
                         $this->entityManager->flush();
                     }elseif($status == 'cancelled'){
-                        $order = $this->orderRepository->find($order_id);
-                        $payment = $order->getLastPayment();
                         $payment->setState(SyliusPaymentInterface::STATE_CANCELLED);
                         $this->entityManager->persist($order);
                         $this->entityManager->flush();
@@ -121,22 +103,6 @@ class CallbackController extends NotifyController implements ActionInterface, Ap
             }
         }
         exit('[request-error]');
-    }
-    /**
-     * @param $data
-     * @param string $file_name
-     * 记录日志方法
-     */
-    public function record_logs($message = '',$data = '',$file_name='logs.txt')
-    {
-        $date = date('Y-m-d H:i:s',time());
-        if(is_array($data)){
-            file_put_contents($file_name,$date.' :: '.$message.' -- '.var_export($data,true).PHP_EOL,FILE_APPEND);
-        }elseif(is_string($data)){
-            file_put_contents($file_name,$date.' :: '.$message.' -- '.$data.PHP_EOL,FILE_APPEND);
-        }else{
-            file_put_contents($file_name,$date.' :: '.$message.' -- '.'unknow type'.PHP_EOL,FILE_APPEND);
-        }
     }
 
     public function supports($request): bool
