@@ -121,20 +121,24 @@ final class CaptureAction implements ActionInterface, ApiAwareInterface
             'fail_url'=>$return_url,
             'pending_url'=>$return_url,
         ];
-
-        $response = $this->wccpaycurlPost($this->api->getGatewayUrl(),$data,$website,$this->api->getMerchantId());
-        $response_data = json_decode($response,true);
-        $status_code = empty($response_data['status_code'])?'':$response_data['status_code'];
-        $status = empty($response_data['status'])?'':$response_data['status'];
-        $message = empty($response_data['message'])?'':$response_data['message'];
-        $fail_code = empty($response_data['fail_code'])?'':$response_data['fail_code'];
-        $cy_id = empty($response_data['cy_id'])?'':$response_data['cy_id'];
-        $expires = empty($response_data['expires'])?'':$response_data['expires'];
-        $redirect_url = empty($response_data['redirect_url'])?'':$response_data['redirect_url'];
-        if($status == 'authorization' && $redirect_url){
-            header("Location:".$redirect_url);
-            exit;
-        }else{
+        try {
+            $response = $this->wccpaycurlPost($this->api->getGatewayUrl(),$data,$website,$this->api->getMerchantId());
+            $response_data = json_decode($response,true);
+            $status_code = empty($response_data['status_code'])?'':$response_data['status_code'];
+            $status = empty($response_data['status'])?'':$response_data['status'];
+            $message = empty($response_data['message'])?'':$response_data['message'];
+            $fail_code = empty($response_data['fail_code'])?'':$response_data['fail_code'];
+            $cy_id = empty($response_data['cy_id'])?'':$response_data['cy_id'];
+            $expires = empty($response_data['expires'])?'':$response_data['expires'];
+            $redirect_url = empty($response_data['redirect_url'])?'':$response_data['redirect_url'];
+            if($status == 'authorization' && $redirect_url){
+                header("Location:".$redirect_url);
+                exit;
+            }else{
+                header("Location:".$return_url);
+                exit;
+            }
+        } catch (RequestException $exception) {
             header("Location:".$return_url);
             exit;
         }
